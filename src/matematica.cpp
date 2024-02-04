@@ -13,11 +13,12 @@ void sortTriangles(vector<triangle>& triRasterizados){
 
 
 }
-vector<triangle> convertMeshtoScreen(mesh obj, matrix& worldView ,matrix& cameraView, matrix &proj2D,camera &cam,int WIDTH,int HEIGHT){
+vector<triangle> convertMeshtoScreen(mesh obj, matrix& worldView ,matrix& cameraView, matrix &proj2D,camera &cam,int WIDTH,int HEIGHT,int renderMode){
 
  vec3d normal, line1,line2,light;
  vector<triangle> triRasterizados;
  for (int i=0;i<obj.tris.size();i++){
+
 
         //Recebem copia do triangulo
         triangle triTransform = obj.tris[i];
@@ -37,13 +38,22 @@ vector<triangle> convertMeshtoScreen(mesh obj, matrix& worldView ,matrix& camera
 
         if( productVecs(normal,cameraRay) < 0.0f){
 
-        light = {0,1,-1,1};
+        light = {0,-1,0,1};
 
-        float dp = ilumination(normal,light);
+        //For every triangle lets cast a shadow by the normal of light
+        if(light.y==normal.y){
+
+
+        }
+
+
+
+        float dp = ilumination(normal,light,triTransform);
         triTransform.intensity = dp;
         triTransform.color[0] = 255;
         triTransform.color[1] = 255;
         triTransform.color[2] = 255;
+        triTransform.renderMode = renderMode;
 
         triView = triTransform;
         convertTriangle(triView,cameraView);
@@ -309,14 +319,16 @@ void translate3D(triangle& mover,float x,float y,float z){
 }
 
 
-float ilumination(vec3d normal,vec3d light){
+float ilumination(vec3d normal,vec3d light,triangle& tri){
 
     float lig = sqrt(light.x*light.x+light.y*light.y+light.z*light.z);
     light.x /=lig;
 	light.y /=lig;
 	light.z /=lig;
 
+
     float dp = normal.x*light.x + normal.y*light.y + normal.z*light.z;
+    tri.cast = normal;
 
     return dp;
 }

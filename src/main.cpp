@@ -28,9 +28,10 @@ int main(int argc,char**argv)
     float fTheta =1.0f;
 
 
-	SDL_Init(SDL_INIT_VIDEO);SDL_Window* window = SDL_CreateWindow("FUCKING DOPE 3D CUBE MOTHERFUCKER",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,
+	SDL_Init(SDL_INIT_VIDEO);SDL_Window* window = SDL_CreateWindow("NAVIGATION 3D",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,
 	WIDTH,HEIGHT,SDL_WINDOW_SHOWN);
-	SDL_Renderer* renderer = SDL_CreateRenderer(window,SDL_RENDERER_ACCELERATED,0);
+
+	SDL_Renderer* renderer = SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED);
 	SDL_RenderClear(renderer);
     SDL_Event event;
 
@@ -60,11 +61,13 @@ int main(int argc,char**argv)
 
 	vec3d spaceStar = {0,0,0};
 
-	float angleSpeed=0.0f;
-    float limitAngle = 0;
-
+	float angleSpeedX=0.0f;
+	float angleSpeedY=0.0f;
+    float limitAngleX = 0;
+    float limitAngleY = 0;
+    int renderMode = 1;
 	while(game){
-	SDL_SetRenderDrawColor(renderer,50,50,50,1);
+	SDL_SetRenderDrawColor(renderer,10,10,10,1);
 	SDL_RenderClear(renderer);
 
 
@@ -79,33 +82,54 @@ int main(int argc,char**argv)
 
         if(event.type == SDL_KEYDOWN){
 
-            vec3d w = {-2*sinf(angleSpeed),0,2*cosf(angleSpeed)};
-            vec3d s = {2*sinf(angleSpeed),0,-2*cosf(angleSpeed)};
+            vec3d w = {-2*sinf(angleSpeedX),2*sinf(angleSpeedY),2*cosf(angleSpeedX)};
+            vec3d s = {2*sinf(angleSpeedX),-2*sinf(angleSpeedY),-2*cosf(angleSpeedX)};
+
             vec3d newFoward;
 
             switch (event.key.keysym.sym)
             {
-                case SDLK_a:
-                    angleSpeed +=0.1;
-                    limitAngle += 0.1;
-                    if(limitAngle>=3.14)    limitAngle=3.14;
+                case SDLK_LEFT:
+                    angleSpeedX +=0.1;
+                    limitAngleX += 0.1;
+                    if(limitAngleX>=3.14)    limitAngleX=3.14;
 
-
-                    if(angleSpeed >2*3.14159f) angleSpeed =0;
+                    if(angleSpeedX >2*3.14159f) angleSpeedX =0;
 
 
                 break;
 
-                case SDLK_d:
-                    angleSpeed-=0.1;
-                    limitAngle -= 0.1;
-                    if(angleSpeed <0) angleSpeed =2*3.14159f;
-                    if(limitAngle<=-3.14)    limitAngle=-3.14;
+                case SDLK_RIGHT:
+                    angleSpeedX-=0.1;
+                    limitAngleX -= 0.1;
+                    if(limitAngleX<=-3.14)    limitAngleX=-3.14;
+                    if(angleSpeedX <0) angleSpeedX =2*3.14159f;
 
                     break;
 
                 case SDLK_w: spaceStar = addVecs(spaceStar,w); break;
                 case SDLK_s: spaceStar = addVecs(spaceStar,s); break;
+                case SDLK_UP:
+                    angleSpeedY +=0.1;
+                    limitAngleY += 0.1;
+                    if(limitAngleY>=3.14)    limitAngleY=3.14;
+
+
+                    if(angleSpeedY >2*3.14159f) angleSpeedY =0;
+
+                break;
+
+                case SDLK_DOWN:
+                    angleSpeedY -=0.1;
+                    limitAngleY -= 0.1;
+                    if(limitAngleY<0)    limitAngleY=3.14;
+
+
+                    if(angleSpeedY <0) angleSpeedY =2*3.14159f;
+
+
+                break;
+                case SDLK_r: renderMode= renderMode*-1; break;
             }
         }
     }
@@ -116,16 +140,21 @@ int main(int argc,char**argv)
 
 
 	matrix camRotationY;
+	matrix camRotationX;
 
-	matrizRotationY(camRotationY,angleSpeed);
+	matrizRotationY(camRotationY,angleSpeedX);
+	matrizRotationX(camRotationX,angleSpeedY*-1);
+
+    matrix result = matrizMultiplicar(camRotationX,camRotationY);
 
     cam.vTarget = {0,0,1};
 
     vec3d newPos = subVecs(spaceStar,cam.vCamera);
     cam.vCamera = addVecs(cam.vCamera,newPos);
 
-	cam.vLook = multiplicar3D(cam.vTarget,camRotationY);
+	cam.vLook = multiplicar3D(cam.vTarget,result);
     cam.vTarget = addVecs(cam.vCamera,cam.vLook);
+
 
     matrix matCamera,matView;
     matrizPointAt(cam.vCamera,cam.vTarget,cam.vUp,matCamera);
@@ -143,12 +172,12 @@ int main(int argc,char**argv)
             a.pos.x = 4+cam.vCamera.x + distCam*cam.vLook.x;
             a.pos.z = 5+cam.vCamera.z + distCam*cam.vLook.z;
 
-            a.rot.y = a.rot.y + angleSpeed;
+            a.rot.y = a.rot.y + angleSpeedY;
 
-            multiplicar3D(a.pos,rY);
-            matrizRotationY(rY,a.rot.y);
+            matrizRotationY(rY,fTheta);
             worldV = matrizMultiplicar(rZ,rY);
-            matrizTranslation(rT,a.pos.x,0,a.pos.z);
+
+            matrizTranslation(rT,10,30,10);
 
 
             worldV = matrizMultiplicar(worldV,rT);
@@ -164,7 +193,7 @@ int main(int argc,char**argv)
            worldV = matrizMultiplicar(worldV,rT);
 
         }
-        vector <triangle> tmp = convertMeshtoScreen(a,worldV,matView,proj2D,cam,WIDTH,HEIGHT);
+        vector <triangle> tmp = convertMeshtoScreen(a,worldV,matView,proj2D,cam,WIDTH,HEIGHT,1);
         for(int x=0;x<tmp.size();x++)
             triRasterizados.push_back(tmp[x]);
 

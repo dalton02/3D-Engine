@@ -20,6 +20,8 @@ typedef struct triangle{
     vec3d vertexs[3];
     float intensity;
     float color[3];
+    int renderMode;
+    vec3d cast;
 }triangle;
 typedef struct mesh{
     vector<triangle> tris;
